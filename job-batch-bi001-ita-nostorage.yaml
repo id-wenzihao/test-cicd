@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-batch-bi001-ita-20251219
+  labels:
+    app: portal-batch
+spec:
+  ttlSecondsAfterFinished: 3600  # Clean up after 1 hour
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: portal-batch
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: portal-batch
+        image: 947309778253.dkr.ecr.ap-northeast-1.amazonaws.com/kube-system/portal-batch:latest
+        command: ["java"]
+        args: 
+          - "-jar"
+          - "/app/batch-bi001-0.0.1-SNAPSHOT.jar"
+          #-<INPUT_DATE>
+          #手動で再実行する場合は、ここにオプションの日付を追加します.
+          #Add optional date here for manual re-run.
+        resources:
+          requests:
+            cpu: "512m"
+            memory: "1024Mi"
+          limits:
+            cpu: "512m"
+            memory: "1024Mi"
+        envFrom:
+        - configMapRef:
+            name: configmap-114portal-k8s-batch-bi001-ita #BI001 Config Variables
+        - secretRef:
+            name: secret-114portal-k8s-batch-common-ita #Common Variables
+

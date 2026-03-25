@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-batch-bi007-prd-<EXEC_DATE> #date to be replaced with lambda
+  namespace: prd-bizportal
+  labels:
+    app: portal-batch
+spec:
+  ttlSecondsAfterFinished: 3600  # Clean up after 1 hour
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: portal-batch
+        compute-type: fargate
+    spec:
+      restartPolicy: Never
+      serviceAccountName: fluent-bit-service-account  # CloudWatch Logs権限
+      containers:
+      - name: portal-batch
+        image: 757195445742.dkr.ecr.ap-northeast-1.amazonaws.com/prd-bizportal/portal-batch:20260203_9d5dec6
+        command: ["java"]
+        args:
+          - "-jar"
+          - "/app/batch-bi007-0.0.1-SNAPSHOT.jar"
+          #-<INPUT_DATE>
+          #手動で再実行する場合は、ここにオプションの日付を追加します.
+          #Add optional date here for manual re-run.
+        resources:
+          requests:
+            cpu: "512m"
+            memory: "1024Mi"
+          limits:
+            cpu: "512m"
+            memory: "1024Mi"
+        envFrom:
+        - configMapRef:
+            name: configmap-114portal-k8s-batch-bi007-prd #BI007 Config Variables
+        - secretRef:
+            name: secret-114portal-k8s-batch-common-prd #Common Variables
+        volumeMounts:
+        # EFS共有領域（バッチデータ用）
+        - name: efs-storage
+          mountPath: /efs
+        # 一時ファイル領域（ローカル）
+        - name: temp-storage
+          mountPath: /tmp
+        # ログ出力用（Fluent Bit収集対象）
+        - name: batch-logs
+          mountPath: /var/log/batch
+      # Fluent Bitサイドカー
+      - name: fluent-bit
+        image: 757195445742.dkr.ecr.ap-northeast-1.amazonaws.com/fluent-bit:2.2.0
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc
+        - name: batch-logs
+          mountPath: /var/log/batch
+          readOnly: true
+      volumes:
+      # EFS静的PV
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-pvc-batch-prd-static
+      # 一時領域（ローカル）
+      - name: temp-storage
+        emptyDir: {}
+      # ログ共有
+      - name: batch-logs
+        emptyDir: {}
+      # Fluent Bit設定
+      - name: fluent-bit-config
+        configMap:
+          name: fluent-bit-config-batch-prd
