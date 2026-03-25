@@ -18,7 +18,7 @@ spec:
       serviceAccountName: fluent-bit-service-account  # CloudWatch Logs権限
       containers:
       - name: portal-batch
-        image: 757195445742.dkr.ecr.ap-northeast-1.amazonaws.com/prd-bizportal/portal-batch:20260203_9d5dec6
+        image: 757195445742.dkr.ecr.ap-northeast-1.amazonaws.com/prd-bizportal/portal-batch:__IMAGE_TAG__
         command: ["java"]
         args:
           - "-jar"

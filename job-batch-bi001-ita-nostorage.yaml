@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: portal-batch
-        image: 947309778253.dkr.ecr.ap-northeast-1.amazonaws.com/kube-system/portal-batch:latest
+        image: 947309778253.dkr.ecr.ap-northeast-1.amazonaws.com/kube-system/portal-batch:__IMAGE_TAG__
         command: ["java"]
         args: 
           - "-jar"
